@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IntentWeave — Diagram editor</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font:15px system-ui,sans-serif;color:#243449;background:#f6f8fb}header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;padding:18px 24px;background:white;border-bottom:1px solid #dce3ec}h1{font-size:21px;margin:0;letter-spacing:-.5px}header p{margin:4px 0 0;color:#64748b;font-size:13px}button,input{font:inherit}button{cursor:pointer;border:1px solid #ccd6e3;border-radius:7px;padding:9px 15px;background:white;color:#243449}button:hover{background:#edf3fc}button:disabled{opacity:.45;cursor:default}button:focus-visible,input:focus-visible{outline:3px solid #88b4ff;outline-offset:3px}.primary{background:#245bd6;color:white;border-color:#245bd6}.primary:hover{background:#1948b2}.toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px}.export-menu{position:relative}.export-menu summary{cursor:pointer;border:1px solid #ccd6e3;border-radius:7px;padding:9px 15px;background:white;list-style:none}.export-menu summary::-webkit-details-marker{display:none}.export-options{position:absolute;right:0;top:100%;z-index:10;display:grid;min-width:150px;padding:5px;background:white;border:1px solid #ccd6e3;border-radius:7px;box-shadow:0 4px 12px #0002}.export-options button{text-align:left;border:0}main{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:calc(100vh - 90px)}aside{padding:24px 20px;background:white;border-right:1px solid #dce3ec}h2{font-size:12px;text-transform:uppercase;letter-spacing:1.4px;color:#64748b;margin:0 0 16px}.palette-tool{width:100%;display:grid;justify-items:center;gap:8px;padding:16px}.palette-tool[aria-pressed="true"]{border-color:#245bd6;background:#edf3ff}.hint{color:#64748b;font-size:13px;line-height:1.6}.properties{margin-top:32px;border-top:1px solid #e3e9f0;padding-top:24px}label{display:block;font-size:13px;margin-bottom:8px}input[type="text"]{width:100%;padding:9px;border:1px solid #ccd6e3;border-radius:6px;margin-bottom:14px}.workspace{min-width:0;padding:24px}.canvas-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}.canvas-heading h2{margin:0}#count{color:#64748b;font-size:13px}.canvas-scroll{overflow:auto;max-height:75vh;border:1px solid #dce3ec;border-radius:10px;background:white}#canvas{display:block;width:100%;min-width:600px;aspect-ratio:1200/800;touch-action:none}#canvas.placing{cursor:crosshair}.goal{cursor:grab}.goal.dragging{cursor:grabbing}.goal .shape{fill:#fff4cb;stroke:#8d712b;stroke-width:2}.goal.selected .shape{stroke:#245bd6;stroke-width:3}.goal:focus-visible{outline:none}.goal:focus-visible .shape{stroke:#245bd6;stroke-width:4}.goal text{pointer-events:none;fill:#3c3525;font-size:10px;text-anchor:middle}#status{min-height:22px;margin:12px 0;color:#52637a;font-size:13px}footer{font-size:12px;color:#64748b;line-height:1.6}@media(max-width:700px){main{grid-template-columns:180px minmax(0,1fr)}aside{padding:20px 12px}.workspace{padding:16px 12px}header{padding:16px}}
+.palette-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.palette-tool{padding:8px 4px;font-size:12px}.palette-tool svg{max-width:100%;height:44px}
+.goal[data-type="goal"] .shape,.palette-tool[data-type="goal"] ellipse{fill:#fff4cb}
+.goal[data-type="task"] .shape,.palette-tool[data-type="task"] polygon{fill:#e0f3dc}
+.goal[data-type="softgoal"] .shape,.palette-tool[data-type="softgoal"] path{fill:#ffeadb}
+.goal[data-type="resource"] .shape,.palette-tool[data-type="resource"] rect{fill:#deedff}
+.link-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:12px}.link-tool{width:100%;display:grid;justify-items:center;gap:1px;padding:5px 3px;font-size:11px}.link-tool:first-child{grid-column:1 / -1}.link-tool svg{width:100%;max-width:170px;height:30px}.palette-help{margin-top:12px;font-size:13px;color:#52637a}.palette-help summary{cursor:pointer}.palette-help .hint{margin:8px 0}.canvas-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.canvas-actions button{padding:5px 8px;font-size:12px}.zoom-controls{display:flex;align-items:center;gap:4px}.zoom-level{min-width:38px;text-align:center;font-size:12px;color:#52637a}.link-tool[aria-pressed="true"]{border-color:#245bd6;background:#edf3ff}.link-path{fill:none;stroke:#52637a;stroke-width:2}.link-hit{fill:none;stroke:transparent;stroke-width:20;cursor:pointer}.link-label{font-size:10px;fill:#243449;text-anchor:middle;paint-order:stroke;stroke:white;stroke-width:5px;stroke-linejoin:round;pointer-events:none}.diagram-link.selected .link-path,.diagram-link:focus-visible .link-path{stroke:#245bd6;stroke-width:3}.diagram-link:focus-visible{outline:none}select{font:inherit;width:100%;padding:8px;margin-bottom:14px} .link-source .shape{stroke:#245bd6;stroke-width:4}
+.actor{cursor:grab}.actor-boundary{fill:#e9edf1;stroke:#758292;stroke-width:2;stroke-dasharray:3 7}.actor-head{fill:#fffbe6;stroke:#52637a;stroke-width:2}.actor text{font-size:14px;text-anchor:middle;fill:#243449;pointer-events:none}.actor.selected .actor-boundary,.actor:focus-visible .actor-boundary{stroke:#245bd6;stroke-width:3}.actor:focus-visible{outline:none}.actor.collapsed .actor-boundary{display:none}.actor.selected .actor-head,.actor:focus-visible .actor-head,.actor.link-source .actor-head{stroke:#245bd6;stroke-width:3}.resize-handle{fill:#fff;stroke:#245bd6;stroke-width:3;cursor:ew-resize;display:none}.resize-handle.selected{display:block}#actor-size,#element-size{width:100%}
+</style>
+</head>
+<body>
+<header>
+<div><h1>IntentWeave</h1><p>A workspace for goal modeling</p></div>
+<div class="toolbar"><button id="open" type="button">Open diagram</button><button id="save" class="primary" type="button">Save diagram</button><details class="export-menu"><summary>Export</summary><div class="export-options"><button id="export-png" type="button">Export PNG</button><button id="export-svg" type="button">Export SVG</button><button id="export-pdf" type="button">Export PDF</button></div></details><input id="file" type="file" accept=".json,application/json" hidden></div>
+</header>
+<main>
+<aside aria-label="Modeling tools">
+<h2>Palette</h2>
+<div class="palette-grid"><button id="goal-tool" class="palette-tool" data-type="goal" type="button" draggable="true" aria-pressed="false">
+<svg width="128" height="64" viewBox="0 0 128 64" aria-hidden="true"><ellipse cx="64" cy="32" rx="61" ry="28" fill="#fff4cb" stroke="#8d712b" stroke-width="2"/><text x="64" y="37" text-anchor="middle" fill="#3c3525" font-size="15">Goal</text></svg>
+<span>Add goal</span></button>
+<button id="softgoal-tool" class="palette-tool" data-type="softgoal" type="button" draggable="true" aria-pressed="false"><svg width="128" height="64" viewBox="-110 -56 220 112" aria-hidden="true"><path d="M -86 -22 C -100 -42 -52 -53 -26 -43 C -11 -55 21 -55 37 -43 C 64 -50 101 -37 89 -19 C 107 -5 100 18 84 22 C 89 41 55 50 32 42 C 14 53 -20 53 -38 42 C -65 49 -99 37 -88 19 C -105 7 -102 -9 -86 -22 Z" fill="#fff4cb" stroke="#8d712b" stroke-width="3"/><text x="0" y="8" text-anchor="middle" fill="#3c3525" font-size="26">Quality</text></svg><span>Add quality</span></button>
+<button id="task-tool" class="palette-tool" data-type="task" type="button" draggable="true" aria-pressed="false"><svg width="128" height="64" viewBox="-110 -56 220 112" aria-hidden="true"><polygon points="-100,0 -70,-48 70,-48 100,0 70,48 -70,48" fill="#fff4cb" stroke="#8d712b" stroke-width="3"/><text x="0" y="8" text-anchor="middle" fill="#3c3525" font-size="26">Task</text></svg><span>Add task</span></button>
+<button id="resource-tool" class="palette-tool" data-type="resource" type="button" draggable="true" aria-pressed="false"><svg width="128" height="64" viewBox="-110 -56 220 112" aria-hidden="true"><rect x="-100" y="-48" width="200" height="96" fill="#fff4cb" stroke="#8d712b" stroke-width="3"/><text x="0" y="8" text-anchor="middle" fill="#3c3525" font-size="26">Resource</text></svg><span>Add resource</span></button>
+<button id="actor-tool" class="palette-tool" data-type="actor" type="button" draggable="true" aria-pressed="false"><svg viewBox="0 0 100 64" aria-hidden="true"><circle cx="52" cy="34" r="28" fill="#e9edf1" stroke="#758292" stroke-width="2" stroke-dasharray="2 4"/><circle cx="32" cy="14" r="10" fill="#fffbe6" stroke="#52637a" stroke-width="2"/><text x="52" y="40" text-anchor="middle" fill="#243449" font-size="12">Actor</text></svg><span>Add actor</span></button>
+</div>
+<div class="link-grid"><button id="contribution-tool" data-link-type="contribution" class="link-tool" type="button" aria-pressed="false"><svg viewBox="0 0 170 48" aria-hidden="true"><text x="85" y="12" text-anchor="middle" fill="#243449" font-size="10">Make / Help / Hurt / Break</text><path d="M 12 23 Q 85 53 158 23 M 149 22 L 158 23 L 154 31" fill="none" stroke="#52637a" stroke-width="2"/></svg><span>Add contribution link</span></button>
+<button id="and-tool" data-link-type="and" class="link-tool" type="button" aria-pressed="false"><svg viewBox="0 0 170 48" aria-hidden="true"><text x="85" y="13" text-anchor="middle" fill="#243449" font-size="11">AND</text><path d="M 12 30 L 158 30 M 148 23 L 148 37" fill="none" stroke="#52637a" stroke-width="2"/></svg><span>Add AND link</span></button>
+<button id="or-tool" data-link-type="or" class="link-tool" type="button" aria-pressed="false"><svg viewBox="0 0 170 48" aria-hidden="true"><text x="85" y="13" text-anchor="middle" fill="#243449" font-size="11">OR</text><path d="M 12 30 L 158 30" fill="none" stroke="#52637a" stroke-width="2"/><path d="M 147 24 L 158 30 L 147 36 Z" fill="#52637a"/></svg><span>Add OR link</span></button>
+<button id="needed-by-tool" data-link-type="needed-by" class="link-tool" type="button" aria-pressed="false"><svg viewBox="0 0 170 48" aria-hidden="true"><text x="85" y="13" text-anchor="middle" fill="#243449" font-size="11">Needed by</text><path d="M 12 30 L 153 30" fill="none" stroke="#52637a" stroke-width="2"/><circle cx="153" cy="30" r="5" fill="white" stroke="#52637a" stroke-width="2"/></svg><span>Add Needed by link</span></button>
+<button id="dependency-tool" data-link-type="dependency" class="link-tool" type="button" aria-pressed="false"><svg viewBox="0 0 170 48" aria-hidden="true"><path d="M 12 17 Q 85 48 158 17" fill="none" stroke="#52637a" stroke-width="2"/><text x="85" y="32" text-anchor="middle" fill="#243449" stroke="white" stroke-width="5" paint-order="stroke" font-size="14">D</text></svg><span>Add dependency link</span></button>
+</div><details class="palette-help"><summary>How to use the palette</summary><p class="hint">Choose an element, then click the canvas. You can also drag it onto the canvas. Drag elements into or out of an actor boundary to change where they belong. Drag the actor circle to move it with its elements. Select an element or actor and drag its blue handle, or use its size control to resize it. Select an actor to collapse or expand it.</p><p class="hint">Choose a link, then select the source and destination elements or actor circles. For a dependency, select the dependent first, then the element it depends on. Press Escape to cancel.</p><p class="hint">Drag elements to move them. Select an element to change its name. Use arrow keys to move a focused element.</p></details>
+<section class="properties" aria-label="Selected element properties">
+<h2>Selected element</h2><label for="goal-name">Name</label><input id="goal-name" type="text" maxlength="160" placeholder="Select a goal" disabled><button id="delete" type="button" disabled>Delete goal</button>
+<div id="element-properties" hidden><label for="element-size">Element size: <span id="element-size-value"></span>%</label><input id="element-size" type="range" min="50" max="200" step="1"></div>
+<div id="actor-properties" hidden><button id="actor-collapse" type="button" aria-expanded="true">Collapse actor</button><label for="actor-size">Boundary size: <output id="actor-size-value"></output></label><input id="actor-size" type="range" min="100" max="400" step="1"></div>
+<div id="link-properties" hidden><label for="contribution-label">Contribution</label><select id="contribution-label"><option>Make</option><option>Help</option><option>Hurt</option><option>Break</option></select></div>
+</section>
+</aside>
+<section class="workspace" aria-label="Diagram workspace">
+<div class="canvas-heading"><h2>Diagram canvas</h2><div class="canvas-actions"><span id="count">0 goals</span><div class="zoom-controls" role="group" aria-label="Canvas zoom"><button id="zoom-out" type="button" aria-label="Zoom out">−</button><span id="zoom-level" class="zoom-level" aria-live="polite">100%</span><button id="zoom-in" type="button" aria-label="Zoom in">+</button><button id="zoom-reset" type="button" aria-label="Reset zoom" disabled>Reset</button></div><button id="expand-right" type="button">Add space right</button><button id="expand-down" type="button">Add space below</button></div></div>
+<div class="canvas-scroll"><svg id="canvas" viewBox="0 0 1200 800" aria-label="Goal diagram canvas">
+<defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#dce3ed"/></pattern><marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="userSpaceOnUse"><path d="M 1 1 L 10 6 L 1 11" fill="none" stroke="#52637a" stroke-width="1.7"/></marker><marker id="and-marker" markerWidth="16" markerHeight="16" refX="14" refY="8" orient="auto" markerUnits="userSpaceOnUse"><path d="M 5 1 L 5 15" fill="none" stroke="#52637a" stroke-width="2"/></marker><marker id="or-marker" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="userSpaceOnUse"><path d="M 1 1 L 12 7 L 1 13 Z" fill="#52637a"/></marker><marker id="needed-marker" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="userSpaceOnUse"><circle cx="7" cy="7" r="5" fill="white" stroke="#52637a" stroke-width="2"/></marker></defs><rect id="canvas-background" width="1200" height="800" fill="url(#grid)"/><g id="actors"></g><g id="links"></g><g id="elements"></g><g id="actor-handles"></g>
+</svg></div>
+<p id="status" role="status">Choose an element in the palette to start drawing.</p>
+<footer>Intentional elements · Saves to a local JSON file · iStar interchange export is not yet implemented.</footer>
+</section>
+</main>
+<script src="vendor/jspdf.umd.min.js"></script>
+<script src="vendor/svg2pdf.umd.min.js"></script>
+<script>
+'use strict';
+const svgNS = 'http://www.w3.org/2000/svg';
+const canvas = document.getElementById('canvas');
+const canvasBackground = document.getElementById('canvas-background');
+let canvasWidth = 1200, canvasHeight = 800, canvasZoom = 100;
+const maxCanvasWidth = 6000, maxCanvasHeight = 4000;
+const elements = document.getElementById('elements');
+const actorLayer = document.getElementById('actors');
+const actorHandles = document.getElementById('actor-handles');
+const actorRadius = 125, legacyActorRadius = 220, minActorRadius = 100, maxActorRadius = 400, elementScale = 0.45;
+const elementProperties = document.getElementById('element-properties');
+const elementSize = document.getElementById('element-size');
+const elementSizeValue = document.getElementById('element-size-value');
+const actorProperties = document.getElementById('actor-properties');
+const actorCollapse = document.getElementById('actor-collapse');
+const actorSize = document.getElementById('actor-size');
+const actorSizeValue = document.getElementById('actor-size-value');
+const linkLayer = document.getElementById('links');
+const linkTools = [...document.querySelectorAll('.link-tool')];
+const linkTypes = {contribution: 'Make', and: 'AND', or: 'OR', 'needed-by': 'Needed by', dependency: 'D'};
+const linkProperties = document.getElementById('link-properties');
+const linkLabel = document.getElementById('contribution-label');
+const labels = ['Make', 'Help', 'Hurt', 'Break'];
+const tools = [...document.querySelectorAll('.palette-tool')];
+const typeLabels = { goal: 'Goal', softgoal: 'Quality', task: 'Task', resource: 'Resource', actor: 'Actor' };
+const dragType = 'application/x-intentweave-element';
+const nameInput = document.getElementById('goal-name');
+const deleteButton = document.getElementById('delete');
+const status = document.getElementById('status');
+const fileInput = document.getElementById('file');
+let goals = [], actors = [], links = [], selectedId = null, selectedLinkId = null, linkSource = null, placing = null, drag = null, dirty = false;
+function updateCanvasSize() {
+  canvas.setAttribute('viewBox', `0 0 ${canvasWidth} ${canvasHeight}`);
+  canvasBackground.setAttribute('width', canvasWidth); canvasBackground.setAttribute('height', canvasHeight);
+  canvas.style.width = (canvasWidth / 1200 * canvasZoom) + '%';
+  canvas.style.minWidth = (canvasWidth / 1200 * 600 * canvasZoom / 100) + 'px';
+  canvas.style.aspectRatio = canvasWidth + ' / ' + canvasHeight;
+  document.getElementById('zoom-level').textContent = canvasZoom + '%';
+  document.getElementById('zoom-out').disabled = canvasZoom <= 50;
+  document.getElementById('zoom-in').disabled = canvasZoom >= 200;
+  document.getElementById('zoom-reset').disabled = canvasZoom === 100;
+  document.getElementById('expand-right').disabled = canvasWidth >= maxCanvasWidth;
+  document.getElementById('expand-down').disabled = canvasHeight >= maxCanvasHeight;
+}
+function setZoom(value) {
+  const scroller = canvas.parentElement, oldWidth = canvas.clientWidth, oldHeight = canvas.clientHeight;
+  const centerX = (scroller.scrollLeft + scroller.clientWidth / 2) / oldWidth;
+  const centerY = (scroller.scrollTop + scroller.clientHeight / 2) / oldHeight;
+  canvasZoom = clamp(value, 50, 200); updateCanvasSize();
+  scroller.scrollLeft = centerX * canvas.clientWidth - scroller.clientWidth / 2;
+  scroller.scrollTop = centerY * canvas.clientHeight - scroller.clientHeight / 2;
+}
+document.getElementById('zoom-in').addEventListener('click', () => setZoom(canvasZoom + 25));
+document.getElementById('zoom-out').addEventListener('click', () => setZoom(canvasZoom - 25));
+document.getElementById('zoom-reset').addEventListener('click', () => setZoom(100));
+function expandCanvas(dx, dy) {
+  canvasWidth = Math.min(maxCanvasWidth, canvasWidth + dx);
+  canvasHeight = Math.min(maxCanvasHeight, canvasHeight + dy);
+  updateCanvasSize();
+  const actor = actors.find(item => item.id === selectedId); if (actor) updateActorSizeControl(actor);
+  dirty = true; status.textContent = 'Canvas expanded. Scroll to see the new space.';
+}
+document.getElementById('expand-right').addEventListener('click', () => expandCanvas(600, 0));
+document.getElementById('expand-down').addEventListener('click', () => expandCanvas(0, 400));
+function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+function actorFor(goal) {
+  if (!goal) return null;
+  return [...actors].reverse().find(actor => Math.hypot(goal.x - actor.x, goal.y - actor.y) <= actor.radius) || null;
+}
+function syncContainment() {
+  for (const goal of goals) {
+    const actor = actorFor(goal), group = elements.querySelector(`[data-id="${goal.id}"]`);
+    if (group) { if (actor) group.dataset.actorId = actor.id; else delete group.dataset.actorId; group.style.display = actor?.collapsed ? 'none' : ''; }
+    const handle = actorHandles.querySelector(`[data-id="${goal.id}"]`);
+    if (handle) handle.style.display = actor?.collapsed ? 'none' : '';
+  }
+}
+function sizeOf(goal) { return goal.size ?? 100; }
+function updateElementHandle(goal) {
+  const handle = actorHandles.querySelector(`[data-id="${goal.id}"]`);
+  if (handle) { handle.setAttribute('cx', goal.x + 100 * elementScale * sizeOf(goal) / 100); handle.setAttribute('cy', goal.y); }
+}
+function setPlacing(value) {
+  placing = value;
+  if (!Object.hasOwn(linkTypes, value)) { linkSource = null; for (const group of [...elements.children, ...actorLayer.children]) group.classList.remove('link-source'); }
+  for (const tool of linkTools) tool.setAttribute('aria-pressed', String(value === tool.dataset.linkType));
+  for (const tool of tools) tool.setAttribute('aria-pressed', String(tool.dataset.type === value));
+  canvas.classList.toggle('placing', Boolean(value));
+}
+function position(event) {
+  return new DOMPoint(event.clientX, event.clientY).matrixTransform(canvas.getScreenCTM().inverse());
+}
+function select(id) {
+  selectedId = id;
+  selectedLinkId = null;
+  linkProperties.hidden = true;
+  const actor = actors.find(item => item.id === id);
+  actorProperties.hidden = !actor;
+  if (actor) { updateActorSizeControl(actor); actorCollapse.textContent = actor.collapsed ? 'Expand actor' : 'Collapse actor'; actorCollapse.setAttribute('aria-expanded', String(!actor.collapsed)); actorSize.disabled = !!actor.collapsed; }
+  const element = goals.find(item => item.id === id);
+  elementProperties.hidden = !element;
+  if (element) { elementSize.value = sizeOf(element); elementSizeValue.textContent = sizeOf(element); }
+  const goal = element || actor;
+  nameInput.disabled = deleteButton.disabled = !goal;
+  nameInput.value = goal ? goal.name : '';
+  nameInput.placeholder = goal ? '' : 'Select an element';
+  deleteButton.textContent = 'Delete ' + (goal ? typeLabels[goal.type].toLowerCase() : 'element');
+  for (const group of [...elements.children, ...actorLayer.children]) group.classList.toggle('selected', group.dataset.id === id);
+  for (const handle of actorHandles.children) handle.classList.toggle('selected', handle.dataset.id === id && !actor?.collapsed);
+  for (const group of linkLayer.children) group.classList.remove('selected');
+}
+function selectLink(id) {
+  select(null);
+  selectedLinkId = id;
+  const link = links.find(item => item.id === id);
+  linkProperties.hidden = !link || link.type !== 'contribution';
+  if (link) { if (link.type === 'contribution') linkLabel.value = link.label; deleteButton.disabled = false; deleteButton.textContent = 'Delete link'; }
+  for (const group of linkLayer.children) group.classList.toggle('selected', group.dataset.id === id);
+}
+const textMeasure = document.createElement('canvas').getContext('2d');
+textMeasure.font = '10px system-ui, sans-serif';
+function updateLabel(group, goal) {
+  const text = group.querySelector('text');
+  text.replaceChildren();
+  const scale = sizeOf(goal) / 100, width = 65 * scale;
+  const maxLines = Math.max(1, Math.floor(32 * scale / 11));
+  const lines = [];
+  let line = '';
+  for (const word of (goal.name.trim() || typeLabels[goal.type]).split(/\s+/)) {
+    const candidate = line ? line + ' ' + word : word;
+    if (textMeasure.measureText(candidate).width <= width) { line = candidate; continue; }
+    if (line) { lines.push(line); line = ''; }
+    for (const character of word) {
+      if (line && textMeasure.measureText(line + character).width > width) { lines.push(line); line = ''; }
+      line += character;
+    }
+  }
+  if (line) lines.push(line);
+  const visible = lines.slice(0, maxLines);
+  if (lines.length > maxLines) {
+    let last = visible[visible.length - 1];
+    while (last && textMeasure.measureText(last + '…').width > width) last = last.slice(0, -1);
+    visible[visible.length - 1] = last + '…';
+  }
+  visible.forEach((content, index) => {
+    const span = document.createElementNS(svgNS, 'tspan');
+    span.setAttribute('x', '0');
+    span.setAttribute('y', String((index - (visible.length - 1) / 2) * 11 + 3));
+    span.textContent = content; text.append(span);
+  });
+  group.setAttribute('aria-label', typeLabels[goal.type] + ': ' + (goal.name || typeLabels[goal.type]));
+}
+function visualEndpoint(id) {
+  const goal = goals.find(item => item.id === id);
+  const actor = goal ? actorFor(goal) : actors.find(item => item.id === id);
+  if (!goal || actor?.collapsed) return {id: actor.id, item: actor, actor: true, proxy: !!goal, x: actor.x - actor.radius / Math.SQRT2, y: actor.y - actor.radius / Math.SQRT2};
+  return {id: goal.id, item: goal, actor: false, proxy: false, x: goal.x, y: goal.y};
+}
+function linkGeometry(link, source, target) {
+  const owner = !source.actor && actorFor(source.item), internalActor = owner && !target.actor && owner.id === actorFor(target.item)?.id ? owner : null;
+  const inside = (x, y) => {
+    if (!internalActor) return {x, y};
+    const dx=x-internalActor.x, dy=y-internalActor.y, distance=Math.hypot(dx,dy), scale=distance > internalActor.radius - 8 ? (internalActor.radius - 8)/distance : 1;
+    return {x:internalActor.x+dx*scale, y:internalActor.y+dy*scale};
+  };
+  if (source.id === target.id) {
+    const scale = source.actor ? 1 : sizeOf(source.item) / 100;
+    const a=inside(source.x-25*scale,source.y-20*scale), b=inside(source.x-60*scale,source.y-85*scale), c=inside(source.x+60*scale,source.y-85*scale), d=inside(source.x+25*scale,source.y-20*scale), label=inside(source.x,source.y-70*scale);
+    return {d: 'M '+a.x+' '+a.y+' C '+b.x+' '+b.y+', '+c.x+' '+c.y+', '+d.x+' '+d.y, x:label.x, y:label.y};
+  }
+  const dx=target.x-source.x, dy=target.y-source.y, distance=Math.hypot(dx,dy) || 1;
+  const ux=dx/distance, uy=dy/distance, offset=Math.min(55,distance/4);
+  const boundary = (item,x,y) => {
+    if (item.actor) return 32;
+    const shape = elements.querySelector(`[data-id="${item.id}"] .shape`);
+    if (!shape) return 50;
+    let inside=0, outside=150;
+    for (let i=0; i<18; i++) {
+      const middle=(inside+outside)/2;
+      if (shape.isPointInFill(new DOMPoint(x*middle/(elementScale * sizeOf(item.item) / 100),y*middle/(elementScale * sizeOf(item.item) / 100)))) inside=middle; else outside=middle;
+    }
+    return inside+2;
+  };
+  const a=boundary(source,ux,uy), b=boundary(target,-ux,-uy);
+  const start=inside(source.x+ux*a, source.y+uy*a), end=inside(target.x-ux*b, target.y-uy*b);
+  if (link.type !== 'contribution' && link.type !== 'dependency') {
+    const label = inside((start.x + end.x)/2, (start.y + end.y)/2 - 7);
+    return {d:'M '+start.x+' '+start.y+' L '+end.x+' '+end.y, x:label.x, y:label.y};
+  }
+  const control=inside((start.x+end.x)/2-uy*offset, (start.y+end.y)/2+ux*offset);
+  const midpointX=(start.x+2*control.x+end.x)/4, midpointY=(start.y+2*control.y+end.y)/4;
+  const label=inside(midpointX, midpointY - (link.type === 'dependency' ? 0 : 7));
+  return {d:'M '+start.x+' '+start.y+' Q '+control.x+' '+control.y+' '+end.x+' '+end.y, x:label.x, y:label.y, angle:Math.atan2(end.y-start.y,end.x-start.x)*180/Math.PI};
+}
+function renderLinks() {
+  linkLayer.replaceChildren();
+  for (const link of links) {
+    const source = visualEndpoint(link.source), target = visualEndpoint(link.target);
+    if (source.id === target.id && (source.proxy || target.proxy)) continue;
+    const group=document.createElementNS(svgNS,'g'); group.classList.add('diagram-link'); group.dataset.id=link.id;
+    group.setAttribute('role','button'); group.setAttribute('tabindex','0'); group.setAttribute('aria-label', (link.type === 'contribution' ? 'Contribution' : link.type === 'dependency' ? 'Dependency' : linkTypes[link.type] + ' link') + ': '+link.label);
+    const sourceActor = actorFor(goals.find(item => item.id === link.source)), targetActor = actorFor(goals.find(item => item.id === link.target));
+    if (sourceActor && targetActor && sourceActor.id === targetActor.id) group.dataset.actorId = sourceActor.id;
+    if (link.id === selectedLinkId) group.classList.add('selected');
+    const geometry=linkGeometry(link, source, target);
+    const path=document.createElementNS(svgNS,'path'); path.classList.add('link-path'); path.setAttribute('d',geometry.d); const marker = {contribution:'url(#arrow)', and:'url(#and-marker)', or:'url(#or-marker)', 'needed-by':'url(#needed-marker)'}[link.type]; if (marker) path.setAttribute('marker-end', marker);
+    const hit=document.createElementNS(svgNS,'path'); hit.classList.add('link-hit'); hit.setAttribute('d',geometry.d);
+    const text=document.createElementNS(svgNS,'text'); text.classList.add('link-label'); text.setAttribute('x',geometry.x); text.setAttribute('y',geometry.y); text.textContent=link.label;
+    if (link.type === 'dependency') { text.setAttribute('dominant-baseline','middle'); text.setAttribute('transform', `rotate(${geometry.angle} ${geometry.x} ${geometry.y})`); }
+    group.append(path,hit,text); linkLayer.append(group);
+  }
+}
+function render() {
+  actorLayer.replaceChildren(); actorHandles.replaceChildren();
+  for (const actor of actors) {
+    const group = document.createElementNS(svgNS, 'g');
+    group.dataset.id = actor.id; group.classList.add('actor'); group.classList.toggle('collapsed', !!actor.collapsed);
+    group.setAttribute('transform', `translate(${actor.x} ${actor.y})`);
+    group.setAttribute('tabindex', '0'); group.setAttribute('role', 'button');
+    group.setAttribute('aria-label', 'Actor: ' + (actor.name || 'Actor'));
+    const boundary = document.createElementNS(svgNS, 'circle'); boundary.classList.add('actor-boundary'); boundary.setAttribute('r', actor.radius);
+    const head = document.createElementNS(svgNS, 'circle'); head.classList.add('actor-head'); head.setAttribute('cx', String(-actor.radius / Math.SQRT2)); head.setAttribute('cy', String(-actor.radius / Math.SQRT2)); head.setAttribute('r', '30');
+    const text = document.createElementNS(svgNS, 'text'); text.setAttribute('x', String(-actor.radius / Math.SQRT2)); text.setAttribute('y', String(-actor.radius / Math.SQRT2 + 5));
+    text.textContent = actor.name.length > 14 ? actor.name.slice(0, 13) + '…' : actor.name;
+    const handle = document.createElementNS(svgNS, 'circle'); handle.classList.add('resize-handle'); handle.style.display = actor.collapsed ? 'none' : ''; handle.dataset.id = actor.id; handle.setAttribute('cx', actor.x + actor.radius); handle.setAttribute('cy', actor.y); handle.setAttribute('r', '9'); handle.setAttribute('aria-hidden', 'true'); actorHandles.append(handle);
+    group.append(boundary, head, text); actorLayer.append(group);
+  }
+  elements.replaceChildren();
+  for (const goal of goals) {
+    const group = document.createElementNS(svgNS, 'g');
+    group.dataset.id = goal.id;
+    group.classList.add('goal');
+    group.setAttribute('transform', `translate(${goal.x} ${goal.y})`);
+    group.setAttribute('tabindex', '0');
+    group.setAttribute('role', 'button');
+    const shape = document.createElementNS(svgNS, { goal: 'ellipse', softgoal: 'path', task: 'polygon', resource: 'rect' }[goal.type]);
+    shape.classList.add('shape'); shape.setAttribute('transform', `scale(${elementScale * sizeOf(goal) / 100})`);
+    if (goal.type === 'goal') { shape.setAttribute('rx', '100'); shape.setAttribute('ry', '48'); }
+    if (goal.type === 'softgoal') shape.setAttribute('d', 'M -86 -22 C -100 -42 -52 -53 -26 -43 C -11 -55 21 -55 37 -43 C 64 -50 101 -37 89 -19 C 107 -5 100 18 84 22 C 89 41 55 50 32 42 C 14 53 -20 53 -38 42 C -65 49 -99 37 -88 19 C -105 7 -102 -9 -86 -22 Z');
+    if (goal.type === 'task') shape.setAttribute('points', '-100,0 -70,-48 70,-48 100,0 70,48 -70,48');
+    if (goal.type === 'resource') { shape.setAttribute('x', '-100'); shape.setAttribute('y', '-48'); shape.setAttribute('width', '200'); shape.setAttribute('height', '96'); }
+    group.dataset.type = goal.type;
+    group.append(shape, document.createElementNS(svgNS, 'text'));
+    updateLabel(group, goal);
+    elements.append(group);
+    const handle = document.createElementNS(svgNS, 'circle'); handle.classList.add('resize-handle'); handle.dataset.id = goal.id; handle.dataset.kind = 'element'; handle.setAttribute('r', '9'); handle.setAttribute('aria-hidden', 'true'); actorHandles.append(handle); updateElementHandle(goal);
+  }
+  syncContainment();
+  renderLinks();
+  const onlyGoals = !actors.length && goals.every(item => item.type === 'goal');
+  document.getElementById('count').textContent = `${goals.length + actors.length} ${onlyGoals ? (goals.length === 1 ? 'goal' : 'goals') : (goals.length + actors.length === 1 ? 'element' : 'elements')}`;
+  if (selectedLinkId) selectLink(selectedLinkId); else select(selectedId);
+}
+function addGoal(point, type = 'goal') {
+  const id = globalThis.crypto?.randomUUID ? crypto.randomUUID() : 'goal-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+  const goal = { id, type, name: typeLabels[type], x: clamp(point.x, type === 'actor' ? actorRadius : 104, type === 'actor' ? canvasWidth - actorRadius : canvasWidth - 104), y: clamp(point.y, type === 'actor' ? actorRadius : 52, type === 'actor' ? canvasHeight - actorRadius : canvasHeight - 52) };
+  if (type === 'actor') goal.radius = actorRadius;
+  (type === 'actor' ? actors : goals).push(goal); selectedId = goal.id; dirty = true;
+  render(); setPlacing(false); nameInput.focus({preventScroll: true}); nameInput.select();
+  status.textContent = typeLabels[type] + ' added. Give it a name in the left panel.';
+}
+for (const tool of tools) {
+  tool.addEventListener('click', () => {
+    setPlacing(placing === tool.dataset.type ? null : tool.dataset.type);
+    status.textContent = placing ? 'Click the canvas to place a ' + typeLabels[placing].toLowerCase() + '. Press Escape to cancel.' : 'Selection mode.';
+  });
+  tool.addEventListener('dragstart', event => { event.dataTransfer.setData(dragType, tool.dataset.type); event.dataTransfer.effectAllowed = 'copy'; });
+}
+for (const tool of linkTools) tool.addEventListener('click', () => {
+  const active = placing !== tool.dataset.linkType;
+  setPlacing(active ? tool.dataset.linkType : null);
+  linkSource = null;
+  for (const group of [...elements.children, ...actorLayer.children]) group.classList.remove('link-source');
+  status.textContent = active ? (tool.dataset.linkType === 'dependency' ? 'Select the dependent element first, then the element it depends on.' : 'Select the source and destination elements or actor circles.') : 'Selection mode.';
+});
+linkLabel.addEventListener('change', () => {
+  const link = links.find(item => item.id === selectedLinkId);
+  if (link) { link.label = linkLabel.value; dirty = true; renderLinks(); }
+});
+canvas.addEventListener('dragover', event => {
+  if (Array.from(event.dataTransfer.types).includes(dragType)) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; }
+});
+canvas.addEventListener('drop', event => {
+  event.preventDefault();
+  const type = event.dataTransfer.getData(dragType);
+  if (Object.hasOwn(typeLabels, type)) addGoal(position(event), type);
+});
+canvas.addEventListener('pointerdown', event => {
+  if (event.button !== 0) return;
+  const group = event.target.closest('.goal');
+  const linkGroup = event.target.closest('.diagram-link');
+  const actorGroup = event.target.closest('.actor');
+  const handle = event.target.closest('.resize-handle');
+  if (Object.hasOwn(linkTypes, placing)) {
+    const endpoint = group || (event.target.classList.contains('actor-head') ? actorGroup : null);
+    if (!endpoint) { status.textContent = 'Select an element or actor circle as ' + (linkSource ? 'the destination.' : 'the source.'); return; }
+    if (!linkSource) { linkSource = endpoint.dataset.id; select(linkSource); endpoint.classList.add('link-source'); status.textContent = placing === 'dependency' ? 'Select the element or actor it depends on.' : 'Select the destination element or actor circle.'; }
+    else {
+      if (placing !== 'contribution' && linkSource === endpoint.dataset.id) { status.textContent = 'Choose a different destination for this link.'; return; }
+      const id = globalThis.crypto?.randomUUID ? crypto.randomUUID() : 'link-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+      const type = placing;
+      links.push({ id, type, source: linkSource, target: endpoint.dataset.id, label: linkTypes[type] });
+      dirty = true; setPlacing(null); render(); selectLink(id);
+      status.textContent = type === 'contribution' ? 'Contribution added. Choose Make, Help, Hurt or Break.' : type === 'dependency' ? 'Dependency link added.' : linkTypes[type] + ' link added.';
+    }
+    return;
+  }
+  if (handle && !placing) { event.preventDefault(); select(handle.dataset.id); drag = {id: handle.dataset.id, resize: true, element: handle.dataset.kind === 'element', pointerId: event.pointerId}; canvas.setPointerCapture(event.pointerId); return; }
+  if (linkGroup) { selectLink(linkGroup.dataset.id); linkGroup.focus(); return; }
+  if (placing) { addGoal(position(event), placing); return; }
+  if (!group && actorGroup) {
+    event.preventDefault(); select(actorGroup.dataset.id); actorGroup.focus();
+    const actor = actors.find(item => item.id === selectedId), point = position(event);
+    drag = { id: actor.id, actor: true, offsetX: point.x - actor.x, offsetY: point.y - actor.y, pointerId: event.pointerId, members: goals.filter(item => actorFor(item)?.id === actor.id).map(item => item.id) };
+    canvas.setPointerCapture(event.pointerId); return;
+  }
+  if (!group) { select(null); return; }
+  event.preventDefault(); select(group.dataset.id); group.focus();
+  const goal = goals.find(item => item.id === selectedId), point = position(event);
+  drag = { id: goal.id, offsetX: point.x - goal.x, offsetY: point.y - goal.y, pointerId: event.pointerId };
+  canvas.setPointerCapture(event.pointerId); group.classList.add('dragging');
+});
+canvas.addEventListener('pointermove', event => {
+  if (!drag || event.pointerId !== drag.pointerId) return;
+  if (drag.resize) {
+    const point = position(event);
+    if (drag.element) { const goal = goals.find(item => item.id === drag.id); resizeElement(goal, (point.x - goal.x) / (100 * elementScale) * 100); }
+    else { const actor = actors.find(item => item.id === drag.id); resizeActor(actor, Math.hypot(point.x - actor.x, point.y - actor.y)); }
+    return;
+  }
+  if (drag.actor) {
+    const actor = actors.find(item => item.id === drag.id), point = position(event);
+    moveActor(actor, point.x - drag.offsetX - actor.x, point.y - drag.offsetY - actor.y, drag.members);
+    dirty = true; return;
+  }
+  const goal = goals.find(item => item.id === drag.id), point = position(event);
+  goal.x = clamp(point.x - drag.offsetX, 104, canvasWidth - 104); goal.y = clamp(point.y - drag.offsetY, 52, canvasHeight - 52);
+  elements.querySelector(`[data-id="${goal.id}"]`).setAttribute('transform', `translate(${goal.x} ${goal.y})`);
+  updateElementHandle(goal); syncContainment(); renderLinks();
+  dirty = true;
+});
+function endDrag() { drag = null; for (const group of elements.children) group.classList.remove('dragging'); }
+canvas.addEventListener('pointerup', endDrag);
+canvas.addEventListener('pointercancel', endDrag);
+canvas.addEventListener('lostpointercapture', endDrag);
+function moveActor(actor, dx, dy, members) {
+  const contained = goals.filter(item => members.includes(item.id));
+  const minX = Math.max(actor.radius - actor.x, ...contained.map(item => 104 - item.x));
+  const maxX = Math.min(canvasWidth - actor.radius - actor.x, ...contained.map(item => canvasWidth - 104 - item.x));
+  const minY = Math.max(actor.radius - actor.y, ...contained.map(item => 52 - item.y));
+  const maxY = Math.min(canvasHeight - actor.radius - actor.y, ...contained.map(item => canvasHeight - 52 - item.y));
+  dx = clamp(dx, minX, maxX); dy = clamp(dy, minY, maxY);
+  actor.x += dx; actor.y += dy;
+  actorLayer.querySelector(`[data-id="${actor.id}"]`).setAttribute('transform', `translate(${actor.x} ${actor.y})`);
+  const handle = actorHandles.querySelector(`[data-id="${actor.id}"]`); handle.setAttribute('cx', actor.x + actor.radius); handle.setAttribute('cy', actor.y);
+  for (const item of contained) { item.x += dx; item.y += dy; elements.querySelector(`[data-id="${item.id}"]`).setAttribute('transform', `translate(${item.x} ${item.y})`); updateElementHandle(item); }
+  updateActorSizeControl(actor); syncContainment(); renderLinks();
+}
+function updateActorSizeControl(actor) {
+  actorSize.max = String(Math.min(maxActorRadius, actor.x, canvasWidth - actor.x, actor.y, canvasHeight - actor.y));
+  actorSize.value = actor.radius; actorSizeValue.value = Math.round(actor.radius);
+}
+function resizeActor(actor, requested) {
+  const radius = clamp(Math.round(requested), minActorRadius, Math.min(maxActorRadius, actor.x, canvasWidth - actor.x, actor.y, canvasHeight - actor.y));
+  if (radius === actor.radius) return;
+  actor.radius = radius;
+  const group = actorLayer.querySelector(`[data-id="${actor.id}"]`), offset = -radius / Math.SQRT2;
+  group.querySelector('.actor-boundary').setAttribute('r', radius);
+  group.querySelector('.actor-head').setAttribute('cx', offset); group.querySelector('.actor-head').setAttribute('cy', offset);
+  group.querySelector('text').setAttribute('x', offset); group.querySelector('text').setAttribute('y', offset + 5);
+  actorHandles.querySelector(`[data-id="${actor.id}"]`).setAttribute('cx', actor.x + radius);
+  updateActorSizeControl(actor); syncContainment(); renderLinks(); dirty = true;
+}
+function resizeElement(goal, requested) {
+  const size = clamp(Math.round(requested), 50, 200);
+  if (size === sizeOf(goal)) return;
+  goal.size = size;
+  const group = elements.querySelector(`[data-id="${goal.id}"]`);
+  group.querySelector('.shape').setAttribute('transform', `scale(${elementScale * size / 100})`);
+  updateLabel(group, goal);
+  elementSize.value = size; elementSizeValue.textContent = size;
+  updateElementHandle(goal); renderLinks(); dirty = true;
+}
+elementSize.addEventListener('input', () => { const goal = goals.find(item => item.id === selectedId); if (goal) resizeElement(goal, Number(elementSize.value)); });
+actorCollapse.addEventListener('click', () => {
+  const actor = actors.find(item => item.id === selectedId);
+  if (!actor) return;
+  endDrag(); setPlacing(null); actor.collapsed = !actor.collapsed; dirty = true;
+  render(); status.textContent = actor.collapsed ? 'Actor collapsed.' : 'Actor expanded.';
+});
+actorSize.addEventListener('input', () => { const actor = actors.find(item => item.id === selectedId); if (actor) resizeActor(actor, Number(actorSize.value)); });
+nameInput.addEventListener('input', () => {
+  const actor = actors.find(item => item.id === selectedId);
+  if (actor) {
+    actor.name = nameInput.value;
+    const group = actorLayer.querySelector(`[data-id="${actor.id}"]`);
+    group.setAttribute('aria-label', 'Actor: ' + (actor.name || 'Actor'));
+    group.querySelector('text').textContent = actor.name.length > 14 ? actor.name.slice(0, 13) + '…' : actor.name;
+    dirty = true; return;
+  }
+  const goal = goals.find(item => item.id === selectedId);
+  if (!goal) return;
+  goal.name = nameInput.value;
+  updateLabel(elements.querySelector(`[data-id="${goal.id}"]`), goal); dirty = true;
+});
+function deleteGoal() {
+  if (!selectedId && !selectedLinkId) return;
+  endDrag();
+  if (selectedLinkId) { links = links.filter(link => link.id !== selectedLinkId); selectedLinkId = null; }
+  else { links = links.filter(link => link.source !== selectedId && link.target !== selectedId); goals = goals.filter(goal => goal.id !== selectedId); actors = actors.filter(actor => actor.id !== selectedId); selectedId = null; }
+  dirty = true; render();
+  status.textContent = 'Element deleted.';
+}
+deleteButton.addEventListener('click', deleteGoal);
+linkLayer.addEventListener('focusin', event => { const group = event.target.closest('.diagram-link'); if (group) selectLink(group.dataset.id); });
+actorLayer.addEventListener('focusin', event => { const group = event.target.closest('.actor'); if (group) select(group.dataset.id); });
+elements.addEventListener('focusin', event => { const group = event.target.closest('.goal'); if (group) select(group.dataset.id); });
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') { setPlacing(false); endDrag(); for (const group of elements.children) group.classList.remove('link-source'); status.textContent = 'Selection mode.'; }
+  if (event.target.matches('input, textarea, select')) return;
+  if (event.key === 'Delete' || event.key === 'Backspace') { if (selectedId || selectedLinkId) { event.preventDefault(); deleteGoal(); } return; }
+  const group = event.target.closest('.goal, .actor');
+  if (!group) return;
+  if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); nameInput.focus(); nameInput.select(); }
+  const moves = { ArrowLeft: [-10, 0], ArrowRight: [10, 0], ArrowUp: [0, -10], ArrowDown: [0, 10] };
+  if (moves[event.key]) {
+    event.preventDefault();
+    const actor = actors.find(item => item.id === group.dataset.id);
+    if (actor) { moveActor(actor, ...moves[event.key], goals.filter(item => actorFor(item)?.id === actor.id).map(item => item.id)); dirty = true; return; }
+    const goal = goals.find(item => item.id === group.dataset.id);
+    goal.x = clamp(goal.x + moves[event.key][0], 104, canvasWidth - 104); goal.y = clamp(goal.y + moves[event.key][1], 52, canvasHeight - 52);
+    group.setAttribute('transform', `translate(${goal.x} ${goal.y})`); updateElementHandle(goal); syncContainment(); renderLinks(); dirty = true;
+  }
+});
+// The exported SVG is self-contained and excludes editing controls and selection styling.
+function exportSvg() {
+  const copy = canvas.cloneNode(true);
+  copy.setAttribute('xmlns', svgNS); copy.setAttribute('width', canvasWidth); copy.setAttribute('height', canvasHeight);
+  copy.removeAttribute('style'); copy.removeAttribute('class'); copy.removeAttribute('aria-label');
+  copy.querySelector('#actor-handles').remove();
+  for (const node of copy.querySelectorAll('.link-hit')) node.remove();
+  for (const node of copy.querySelectorAll('.selected, .link-source, .dragging')) node.classList.remove('selected', 'link-source', 'dragging');
+  for (const node of copy.querySelectorAll('[tabindex], [role], [aria-label]')) { node.removeAttribute('tabindex'); node.removeAttribute('role'); node.removeAttribute('aria-label'); }
+  const style = document.createElementNS(svgNS, 'style');
+  style.textContent = `text{font-family:system-ui,sans-serif}.goal .shape{stroke:#8d712b;stroke-width:2}.goal[data-type="goal"] .shape{fill:#fff4cb}.goal[data-type="task"] .shape{fill:#e0f3dc}.goal[data-type="softgoal"] .shape{fill:#ffeadb}.goal[data-type="resource"] .shape{fill:#deedff}.goal text{fill:#3c3525;font-size:10px;text-anchor:middle}.actor-boundary{fill:#e9edf1;stroke:#758292;stroke-width:2;stroke-dasharray:3 7}.actor-head{fill:#fffbe6;stroke:#52637a;stroke-width:2}.actor text{font-size:14px;text-anchor:middle;fill:#243449}.actor.collapsed .actor-boundary{display:none}.link-path{fill:none;stroke:#52637a;stroke-width:2}.link-label{font-size:10px;fill:#243449;text-anchor:middle;paint-order:stroke;stroke:white;stroke-width:5px;stroke-linejoin:round}`;
+  copy.insertBefore(style, copy.firstChild);
+  const white = document.createElementNS(svgNS, 'rect'); white.setAttribute('width', canvasWidth); white.setAttribute('height', canvasHeight); white.setAttribute('fill', 'white');
+  copy.insertBefore(white, copy.querySelector('#canvas-background'));
+  return new XMLSerializer().serializeToString(copy);
+}
+function downloadExport(blob, extension) {
+  const url = URL.createObjectURL(blob), anchor = document.createElement('a');
+  anchor.href = url; anchor.download = 'intentweave-diagram.' + extension; document.body.append(anchor); anchor.click(); anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+async function renderExportImage(svg) {
+  const url = URL.createObjectURL(new Blob([svg], {type:'image/svg+xml;charset=utf-8'}));
+  try {
+    const image = new Image(); image.src = url; await image.decode();
+    const surface = document.createElement('canvas'); const scale = Math.min(2, Math.sqrt(32000000 / (canvasWidth * canvasHeight))); surface.width = Math.round(canvasWidth * scale); surface.height = Math.round(canvasHeight * scale);
+    const context = surface.getContext('2d'); if (!context) throw new Error('Canvas rendering is unavailable.');
+    context.drawImage(image, 0, 0, surface.width, surface.height); return surface;
+  } finally { URL.revokeObjectURL(url); }
+}
+function canvasBlob(surface, type, quality) {
+  return new Promise((resolve, reject) => surface.toBlob(blob => blob ? resolve(blob) : reject(new Error('Image encoding failed.')), type, quality));
+}
+async function pdfFromSvg(svg) {
+  const element = new DOMParser().parseFromString(svg, 'image/svg+xml').documentElement;
+  // Draw label halos separately: PDF conversion does not support SVG paint-order.
+  for (const label of element.querySelectorAll('.link-label')) {
+    const halo = label.cloneNode(true);
+    halo.setAttribute('style', 'fill:white;stroke:white;stroke-width:5px;stroke-linejoin:round');
+    label.setAttribute('style', 'fill:#243449;stroke:none');
+    label.before(halo);
+  }
+  const pdf = new window.jspdf.jsPDF({orientation: canvasWidth >= canvasHeight ? 'landscape' : 'portrait', unit: 'pt', format: [canvasWidth, canvasHeight], compress: false});
+  await pdf.svg(element, {x: 0, y: 0, width: canvasWidth, height: canvasHeight});
+  return pdf.output('blob');
+}
+async function exportDiagram(format) {
+  try {
+    const svg = exportSvg();
+    if (format === 'svg') downloadExport(new Blob([svg], {type:'image/svg+xml;charset=utf-8'}), format);
+    else if (format === 'pdf') downloadExport(await pdfFromSvg(svg), format);
+    else downloadExport(await canvasBlob(await renderExportImage(svg), 'image/png'), format);
+    document.querySelector('.export-menu').open = false;
+    status.textContent = format.toUpperCase() + ' export requested.';
+  } catch (error) { status.textContent = 'Could not export diagram: ' + error.message; }
+}
+for (const format of ['png', 'svg', 'pdf']) document.getElementById('export-' + format).addEventListener('click', () => exportDiagram(format));
+document.getElementById('save').addEventListener('click', () => {
+  const data = links.some(link => link.type === 'dependency')
+    ? { format: 'intentweave-diagram', version: 9, canvas: { width: canvasWidth, height: canvasHeight }, elements: goals, actors, links }
+    : canvasWidth !== 1200 || canvasHeight !== 800
+    ? { format: 'intentweave-diagram', version: 8, canvas: { width: canvasWidth, height: canvasHeight }, elements: goals, actors, links }
+    : links.some(link => link.type !== 'contribution')
+    ? { format: 'intentweave-diagram', version: 7, canvas: { width: 1200, height: 800 }, elements: goals, actors, links }
+    : actors.some(actor => actor.collapsed) || links.some(link => actors.some(actor => actor.id === link.source || actor.id === link.target))
+    ? { format: 'intentweave-diagram', version: 6, canvas: { width: 1200, height: 800 }, elements: goals, actors, links }
+    : goals.some(item => sizeOf(item) !== 100) ? { format: 'intentweave-diagram', version: 5, canvas: { width: 1200, height: 800 }, elements: goals, actors, links }
+    : actors.length ? { format: 'intentweave-diagram', version: 4, canvas: { width: 1200, height: 800 }, elements: goals, actors, links }
+    : links.length ? { format: 'intentweave-diagram', version: 3, canvas: { width: 1200, height: 800 }, elements: goals, links }
+    : goals.every(item => item.type === 'goal')
+    ? { format: 'intentweave-goals', version: 1, canvas: { width: 1200, height: 800 }, goals }
+    : { format: 'intentweave-diagram', version: 2, canvas: { width: 1200, height: 800 }, elements: goals };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+  const link = document.createElement('a'); link.href = url; link.download = 'intentweave-diagram.json';
+  document.body.append(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000); dirty = false;
+  status.textContent = 'Diagram download requested. Keep the JSON file to open it again.';
+});
+document.getElementById('open').addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', async () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+  try {
+    if (file.size > 2000000) throw new Error('Choose a diagram smaller than 2 MB.');
+    const data = JSON.parse(await file.text());
+    const legacy = data && data.format === 'intentweave-goals' && data.version === 1;
+    const current = data && data.format === 'intentweave-diagram' && (data.version === 2 || data.version === 3 || data.version === 4 || data.version === 5 || data.version === 6 || data.version === 7 || data.version === 8 || data.version === 9);
+    let loadedWidth = 1200, loadedHeight = 800;
+    if (current && (data.version === 8 || data.version === 9)) {
+      if (!data.canvas || !Number.isInteger(data.canvas.width) || !Number.isInteger(data.canvas.height) || data.canvas.width < 1200 || data.canvas.width > maxCanvasWidth || data.canvas.height < 800 || data.canvas.height > maxCanvasHeight) throw new Error('The diagram contains invalid canvas dimensions.');
+      loadedWidth = data.canvas.width; loadedHeight = data.canvas.height;
+    }
+    const items = legacy ? data.goals : current ? data.elements : null;
+    if (!Array.isArray(items) || items.length > 1000) throw new Error('Choose an IntentWeave diagram saved by this editor.');
+    const ids = new Set();
+    const loaded = items.map(goal => {
+      if (!goal || typeof goal.id !== 'string' || !/^[a-zA-Z0-9_-]{1,100}$/.test(goal.id) || ids.has(goal.id) || (!Object.hasOwn(typeLabels, goal.type) || goal.type === 'actor' || (legacy && goal.type !== 'goal')) || typeof goal.name !== 'string' || goal.name.length > 160 || !Number.isFinite(goal.x) || !Number.isFinite(goal.y) || (goal.size !== undefined && (!Number.isInteger(goal.size) || goal.size < 50 || goal.size > 200))) throw new Error('The diagram contains invalid goal data.');
+      ids.add(goal.id);
+      return { id: goal.id, type: goal.type, name: goal.name, x: clamp(goal.x, 104, loadedWidth - 104), y: clamp(goal.y, 52, loadedHeight - 52), ...(goal.size !== undefined ? {size: goal.size} : {}) };
+    });
+    const loadedActors = [];
+    if (current && (data.version === 4 || data.version === 5 || data.version === 6 || data.version === 7 || data.version === 8 || data.version === 9)) {
+      if (!Array.isArray(data.actors) || data.actors.length > 1000) throw new Error('The diagram contains invalid actor data.');
+      for (const actor of data.actors) {
+        if (!actor || typeof actor.id !== 'string' || !/^[a-zA-Z0-9_-]{1,100}$/.test(actor.id) || ids.has(actor.id) || actor.type !== 'actor' || typeof actor.name !== 'string' || actor.name.length > 160 || !Number.isFinite(actor.x) || !Number.isFinite(actor.y) || (actor.radius !== undefined && (!Number.isFinite(actor.radius) || actor.radius < minActorRadius || actor.radius > maxActorRadius)) || (actor.collapsed !== undefined && typeof actor.collapsed !== 'boolean')) throw new Error('The diagram contains invalid actor data.');
+        const radius = actor.radius === undefined ? legacyActorRadius : actor.radius;
+        ids.add(actor.id); loadedActors.push({id: actor.id, type: 'actor', name: actor.name, radius, ...(actor.collapsed ? {collapsed: true} : {}), x: clamp(actor.x, radius, loadedWidth - radius), y: clamp(actor.y, radius, loadedHeight - radius)});
+      }
+    }
+    const elementIds = new Set([...loaded.map(item => item.id), ...(data.version >= 6 ? loadedActors.map(item => item.id) : [])]);
+    let loadedLinks = [];
+    if (current && (data.version === 3 || data.version === 4 || data.version === 5 || data.version === 6 || data.version === 7 || data.version === 8 || data.version === 9)) {
+      if (!Array.isArray(data.links) || data.links.length > 2000) throw new Error('The diagram contains invalid link data.');
+      loadedLinks = data.links.map(link => {
+        if (!link || typeof link.id !== 'string' || !/^[a-zA-Z0-9_-]{1,100}$/.test(link.id) || ids.has(link.id) || !Object.hasOwn(linkTypes, link.type) || (data.version < 7 && link.type !== 'contribution') || (data.version < 9 && link.type === 'dependency') || !elementIds.has(link.source) || !elementIds.has(link.target) || (link.type === 'contribution' ? !labels.includes(link.label) : link.label !== linkTypes[link.type] || link.source === link.target)) throw new Error('The diagram contains invalid link data.');
+        ids.add(link.id);
+        return {id:link.id, type:link.type, source:link.source, target:link.target, label:link.label};
+      });
+    }
+    if (dirty && !confirm('Replace the current diagram? Save it first if you want to keep your changes.')) return;
+    endDrag(); canvasWidth = loadedWidth; canvasHeight = loadedHeight; updateCanvasSize(); goals = loaded; actors = loadedActors; links = loadedLinks; selectedId = null; selectedLinkId = null; setPlacing(false); dirty = false; render();
+    status.textContent = 'Diagram opened.';
+  } catch (error) { status.textContent = 'Could not open file: ' + error.message; }
+  finally { fileInput.value = ''; }
+});
+window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
+</script>
+</body>
+</html>
